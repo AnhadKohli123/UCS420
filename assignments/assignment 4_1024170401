@@ -1,0 +1,233 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# UCS420: Cognitive Computing\n",
+    "# Assignment 4 - A Cognitive FAQ System Using Pandas\n",
+    "# Roll Number: 1024170401"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Q1: Build Your Personalized Knowledge Base"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "\n",
+    "roll_number = \"1024170401\"\n",
+    "last_two_digits = roll_number[-2:]\n",
+    "print(f\"Roll Number: {roll_number}\")\n",
+    "print(f\"Last Two Digits: {last_two_digits}\")\n",
+    "\n",
+    "digit_1, digit_2 = int(last_two_digits[0]), int(last_two_digits[1])\n",
+    "print(f\"Digit 1: {digit_1}, Digit 2: {digit_2}\")\n",
+    "\n",
+    "categories = [\"billing\", \"account\", \"general\"]\n",
+    "category_1 = categories[digit_1 % 3]\n",
+    "category_2 = categories[digit_2 % 3]\n",
+    "print(f\"Category for digit {digit_1}: {category_1}\")\n",
+    "print(f\"Category for digit {digit_2}: {category_2}\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fixed_entries = [\n",
+    "    {\"question\": \"what is the annual fee\", \"answer\": \"The annual fee is Rs 500.\",\n",
+    "     \"keywords\": \"fee cost price charge\", \"category\": \"billing\"},\n",
+    "    {\"question\": \"how to reset password\", \"answer\": \"Go to Settings > Reset Password.\",\n",
+    "     \"keywords\": \"password reset login\", \"category\": \"account\"},\n",
+    "    {\"question\": \"what are your working hours\", \"answer\": \"We are open 9 AM to 5 PM.\",\n",
+    "     \"keywords\": \"hours timing open time\", \"category\": \"general\"},\n",
+    "    {\"question\": \"how can i pay the fee\", \"answer\": \"You can pay via UPI, card, or net banking.\",\n",
+    "     \"keywords\": \"pay payment upi fee\", \"category\": \"billing\"},\n",
+    "]\n",
+    "\ncustom_entries = [\n",
+    "    {\"question\": \"what are the refund policies\", \n",
+    "     \"answer\": \"Refunds are processed within 5-7 business days to your original payment method.\",\n",
+    "     \"keywords\": \"refund money back policy return\", \n",
+    "     \"category\": \"billing\"},\n",
+    "    {\"question\": \"how do i update my registered email\", \n",
+    "     \"answer\": \"Go to Account Settings > Email > Verify New Email and confirm via OTP.\",\n",
+    "     \"keywords\": \"email update change account profile\", \n",
+    "     \"category\": \"account\"},\n",
+    "]\n",
+    "\nall_entries = fixed_entries + custom_entries\ndf = pd.DataFrame(all_entries)\n\nprint(\"Personalized Knowledge Base (6 FAQ Entries):\")\nprint(df)\nprint(f\"\\nDataFrame Shape: {df.shape}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Q2: Generate and Score a Hypothesis"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def score_query(query, df):\n",
+    "    query_lower = query.lower().split()\n",
+    "    results = []\n",
+    "    \n",
+    "    for idx, row in df.iterrows():\n",
+    "        question_words = set(row['question'].lower().split())\n",
+    "        keywords_list = set(row['keywords'].lower().split())\n",
+    "        all_words = question_words | keywords_list\n",
+    "        \n",
+    "        matches = sum(1 for word in query_lower if word in all_words)\n",
+    "        if matches > 0:\n",
+    "            confidence_score = matches / len(all_words) if len(all_words) > 0 else 0\n",
+    "            results.append({\n",
+    "                'index': idx,\n",
+    "                'question': row['question'],\n",
+    "                'answer': row['answer'],\n",
+    "                'category': row['category'],\n",
+    "                'matches': matches,\n",
+    "                'confidence': confidence_score\n",
+    "            })\n",
+    "    \n",
+    "    if results:\n",
+    "        results_df = pd.DataFrame(results).sort_values('confidence', ascending=False)\n",
+    "        return results_df\n",
+    "    else:\n",
+    "        return pd.DataFrame()\n",
+    "\ntest_query_1 = \"how to reset password\"\nprint(f\"Query: '{test_query_1}'\")\nprint(score_query(test_query_1, df))\nprint(\"\\n\" + \"=\"*80 + \"\\n\")\n\ntest_query_2 = \"fee and payment\"\nprint(f\"Query: '{test_query_2}'\")\nprint(score_query(test_query_2, df))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Q3: Write a Function to Filter by Category"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def same_category(category_name, df):\n",
+    "    filtered_df = df[df['category'] == category_name][['question', 'answer', 'category']]\n",
+    "    return filtered_df\n",
+    "\nselected_category = \"billing\"\nprint(f\"All FAQ entries in '{selected_category}' category:\")\nprint(same_category(selected_category, df))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Q4: Add New Keyword and Save to CSV"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "print(\"Current DataFrame:\")\nprint(df)\nprint(\"\\n\")\n",
+    "\nentry_to_update = 0\nnew_keyword = \"discount\"\n\nprint(f\"Entry being updated (Index {entry_to_update}):\")\nprint(f\"Question: {df.iloc[entry_to_update]['question']}\")\nprint(f\"Current Keywords: {df.iloc[entry_to_update]['keywords']}\")\nprint(f\"New Keyword to Add: {new_keyword}\")\n\ndf.loc[entry_to_update, 'keywords'] = df.iloc[entry_to_update]['keywords'] + \" \" + new_keyword\n\nprint(f\"Updated Keywords: {df.iloc[entry_to_update]['keywords']}\")\nprint(\"\\n\")\n\ncsv_filename = f\"{roll_number}_faq_data.csv\"\ndf.to_csv(csv_filename, index=False)\nprint(f\"DataFrame saved to '{csv_filename}'\")\nprint(\"\\nSaved CSV Content:\")\nprint(df)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Q5: GroupBy Category Counts"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "category_counts = df.groupby('category').size()\nprint(\"FAQ entries per category:\")\nprint(category_counts)\nprint(\"\\nDetailed breakdown:\")\nfor category, count in category_counts.items():\n",
+    "    print(f\"{category}: {count} entries\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Q6: Enhanced Scoring Function with Tie Detection"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def score_query_with_tie_detection(query, df):\n",
+    "    query_lower = query.lower().split()\n",
+    "    results = []\n",
+    "    \n",
+    "    for idx, row in df.iterrows():\n",
+    "        question_words = set(row['question'].lower().split())\n",
+    "        keywords_list = set(row['keywords'].lower().split())\n",
+    "        all_words = question_words | keywords_list\n",
+    "        \n",
+    "        matches = sum(1 for word in query_lower if word in all_words)\n",
+    "        if matches > 0:\n",
+    "            confidence_score = matches / len(all_words) if len(all_words) > 0 else 0\n",
+    "            results.append({\n",
+    "                'index': idx,\n",
+    "                'question': row['question'],\n",
+    "                'answer': row['answer'],\n",
+    "                'category': row['category'],\n",
+    "                'matches': matches,\n",
+    "                'confidence': confidence_score\n",
+    "            })\n",
+    "    \n",
+    "    if not results:\n",
+    "        print(\"No matches found.\")\n",
+    "        return pd.DataFrame()\n",
+    "    \n",
+    "    results_df = pd.DataFrame(results).sort_values('confidence', ascending=False)\n",
+    "    max_confidence = results_df['confidence'].max()\n",
+    "    tied_entries = results_df[results_df['confidence'] == max_confidence]\n",
+    "    \n",
+    "    if len(tied_entries) > 1:\n",
+    "        print(f\"Tie detected! {len(tied_entries)} entries with equal confidence ({max_confidence:.4f}):\")\n",
+    "        print(tied_entries[['question', 'answer', 'category', 'confidence']])\n",
+    "    else:\n",
+    "        print(f\"Single best match (Confidence: {max_confidence:.4f}):\")\n",
+    "        print(tied_entries[['question', 'answer', 'category', 'confidence']])\n",
+    "    \n",
+    "    return results_df\n",
+    "\nprint(\"DEMONSTRATION 1: Query with TIE\")\nprint(\"-\" * 80)\nquery_with_tie = \"fee payment\"\nprint(f\"Query: '{query_with_tie}'\")\nprint()\nscore_query_with_tie_detection(query_with_tie, df)\n\nprint(\"\\n\\n\" + \"=\"*80 + \"\\n\")\nprint(\"DEMONSTRATION 2: Query WITHOUT TIE\")\nprint(\"-\" * 80)\nquery_without_tie = \"password reset\"\nprint(f\"Query: '{query_without_tie}'\")\nprint()\nscore_query_with_tie_detection(query_without_tie, df)"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "name": "python",
+   "version": "3.8.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
